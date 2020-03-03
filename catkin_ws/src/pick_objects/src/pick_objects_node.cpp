@@ -61,5 +61,6 @@ int main(int argc, char** argv){
     ros::Duration(5).sleep();
     sendGoal(goal2, ac, "Robot is travelling to the drop-off zone", "Robot dropped the virtual object");
 
-    return 0;
+    // End here
+    ros::spin();
 }

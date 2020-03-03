@@ -1,9 +1,19 @@
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Point.h>
+#include <nav_msgs/Odometry.h>
 
 namespace
 {
+
+constexpr float kEpsilon = 0.2F;
+
+nav_msgs::Odometry current_odometry{};
+
+void odomCallback(const nav_msgs::Odometry& msg)
+{
+    current_odometry = msg;
+}
 
 void publishMarker(const geometry_msgs::Point& position, const int32_t action,
                    ros::Publisher& publisher)
@@ -37,9 +47,9 @@ void publishMarker(const geometry_msgs::Point& position, const int32_t action,
     marker.pose.orientation.w = 1.0;
 
     // Set the scale of the marker
-    marker.scale.x = 1.0;
-    marker.scale.y = 1.0;
-    marker.scale.z = 1.0;
+    marker.scale.x = 0.2;
+    marker.scale.y = 0.2;
+    marker.scale.z = 0.2;
 
     // Set the color
     marker.color.r = 0.0f;
@@ -53,6 +63,19 @@ void publishMarker(const geometry_msgs::Point& position, const int32_t action,
     publisher.publish(marker);
 }
 
+void waitForRobotToArrive(const geometry_msgs::Point& target_position)
+{
+    while (std::fabs(target_position.x - current_odometry.pose.pose.position.x) > kEpsilon ||
+           std::fabs(target_position.y - current_odometry.pose.pose.position.y) > kEpsilon)
+    {
+        ros::spinOnce();  // To update current_odometry
+        ros::Duration(0.01).sleep();
+
+        std::cout << std::fabs(target_position.x - current_odometry.pose.pose.position.x) << ","
+                  << std::fabs(target_position.y - current_odometry.pose.pose.position.y) << std::endl;
+    }
+}
+
 }  // namespace
 
 int main( int argc, char** argv )
@@ -61,6 +84,7 @@ int main( int argc, char** argv )
     ros::init(argc, argv, "add_markers");
     ros::NodeHandle n;
     ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
+    ros::Subscriber marker_sub = n.subscribe("/odom", 1, odomCallback);
 
     // Wait until we have a subscriber
     while (marker_pub.getNumSubscribers() < 1)
@@ -69,25 +93,42 @@ int main( int argc, char** argv )
         {
             return 0;
         }
-        ROS_WARN("Please create a subscribe to /visualization_marker");
-        ros::Duration(1).sleep();
+        ROS_WARN("Please create a subscriber to /visualization_marker");
+        ros::Duration(0.1).sleep();
     }
 
-    // Set pickup position
-    geometry_msgs::Point pickup_position{};
-    pickup_position.x = -2.F;
-    pickup_position.y = 0.F;
-    pickup_position.z = 0.F;
+    // Set pickup position and publish marker
+    geometry_msgs::Point target_position{};
+    target_position.x = -2.F;
+    target_position.y = 0.F;
+    target_position.z = 0.F;
+    std::cout << "Publishing marker to pick up position..." << std::endl;
+    publishMarker(target_position, visualization_msgs::Marker::ADD, marker_pub);
+
+    // Wait for robot to arrive
+    std::cout << "Waiting for robot to arrive to pickup position..." << std::endl;
+    waitForRobotToArrive(target_position);
+
+    // Hide the marker
+    std::cout << "Hiding the marker..." << std::endl;
+    publishMarker(target_position, visualization_msgs::Marker::DELETE, marker_pub);
+
+    // Sleep 5 seconds to simulate a pickup
+    ros::Duration(5).sleep();
 
     // Set drop-off position
-    geometry_msgs::Point dropoff_position{};
-    dropoff_position.x = 0.F;
-    dropoff_position.y = 0.F;
-    dropoff_position.z = 0.F;
+    target_position.x = 0.F;
+    target_position.y = 0.F;
+    target_position.z = 0.F;
 
-    publishMarker(pickup_position, visualization_msgs::Marker::ADD, marker_pub);
-    ros::Duration(5).sleep();
-    publishMarker(pickup_position, visualization_msgs::Marker::DELETE, marker_pub);
-    ros::Duration(5).sleep();
-    publishMarker(dropoff_position, visualization_msgs::Marker::ADD, marker_pub);
+    // Wait for robot to arrive at dropoff location
+    std::cout << "Waiting for robot to arrive to dropoff position..." << std::endl;
+    waitForRobotToArrive(target_position);
+
+    // Display marker again
+    std::cout << "Publishing marker at drop-off position..." << std::endl;
+    publishMarker(target_position, visualization_msgs::Marker::ADD, marker_pub);
+
+    // End here
+    ros::spin();
 }
