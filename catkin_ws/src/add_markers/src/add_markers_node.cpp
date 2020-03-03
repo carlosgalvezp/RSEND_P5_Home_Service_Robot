@@ -70,9 +70,6 @@ void waitForRobotToArrive(const geometry_msgs::Point& target_position)
     {
         ros::spinOnce();  // To update current_odometry
         ros::Duration(0.01).sleep();
-
-        std::cout << std::fabs(target_position.x - current_odometry.pose.pose.position.x) << ","
-                  << std::fabs(target_position.y - current_odometry.pose.pose.position.y) << std::endl;
     }
 }
 
@@ -99,34 +96,27 @@ int main( int argc, char** argv )
 
     // Set pickup position and publish marker
     geometry_msgs::Point target_position{};
-    target_position.x = -2.F;
-    target_position.y = 0.F;
-    target_position.z = 0.F;
-    std::cout << "Publishing marker to pick up position..." << std::endl;
+    target_position.x = -8.F;
+    target_position.y = -5.F;
     publishMarker(target_position, visualization_msgs::Marker::ADD, marker_pub);
 
     // Wait for robot to arrive
-    std::cout << "Waiting for robot to arrive to pickup position..." << std::endl;
     waitForRobotToArrive(target_position);
 
     // Hide the marker
-    std::cout << "Hiding the marker..." << std::endl;
     publishMarker(target_position, visualization_msgs::Marker::DELETE, marker_pub);
 
     // Sleep 5 seconds to simulate a pickup
     ros::Duration(5).sleep();
 
     // Set drop-off position
-    target_position.x = 0.F;
-    target_position.y = 0.F;
-    target_position.z = 0.F;
+    target_position.x = 1.F;
+    target_position.y = 4.F;
 
     // Wait for robot to arrive at dropoff location
-    std::cout << "Waiting for robot to arrive to dropoff position..." << std::endl;
     waitForRobotToArrive(target_position);
 
     // Display marker again
-    std::cout << "Publishing marker at drop-off position..." << std::endl;
     publishMarker(target_position, visualization_msgs::Marker::ADD, marker_pub);
 
     // End here

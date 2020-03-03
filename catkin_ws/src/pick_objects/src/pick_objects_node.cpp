@@ -51,10 +51,12 @@ int main(int argc, char** argv){
     move_base_msgs::MoveBaseGoal goal2;
 
     // Define a position and orientation for the robot to reach
-    goal1.target_pose.pose.position.x = -2.0;
+    goal1.target_pose.pose.position.x = -8.0;
+    goal1.target_pose.pose.position.y = -5.0;
     goal1.target_pose.pose.orientation.w = 1.0;
 
-    goal2.target_pose.pose.position.x = 0.0;
+    goal2.target_pose.pose.position.x = 1.0;
+    goal2.target_pose.pose.position.y = 4.0;
     goal2.target_pose.pose.orientation.w = 1.0;
 
     sendGoal(goal1, ac, "Robot is travelling to the pick-up zone", "Robot picked up the virtual object");
